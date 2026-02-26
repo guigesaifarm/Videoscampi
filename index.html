@@ -1,1 +1,801 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAMPIFITECH | AI + Machine Learning + Controle de Motor</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        agro: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                        tech: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #22c55e;
+            border-radius: 4px;
+        }
+
+        /* Video Lightbox Styles */
+        .video-lightbox {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .video-lightbox.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-content {
+            position: relative;
+            width: 90vw;
+            height: 90vh;
+            max-width: 1600px;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .video-lightbox.active .lightbox-content {
+            transform: scale(1);
+        }
+
+        .close-lightbox {
+            position: absolute;
+            top: -60px;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .close-lightbox:hover {
+            background: #ef4444;
+            border-color: #ef4444;
+            transform: rotate(90deg);
+        }
+
+        /* Video Card Styles */
+        .video-card {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid transparent;
+        }
+
+        .video-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: #22c55e;
+            box-shadow: 0 25px 50px -12px rgba(34, 197, 94, 0.3);
+        }
+
+        .video-thumbnail {
+            position: relative;
+            aspect-ratio: 16/9;
+            overflow: hidden;
+        }
+
+        .video-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .video-card:hover .video-thumbnail img {
+            transform: scale(1.1);
+        }
+
+        .play-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.4) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .video-card:hover .play-overlay {
+            opacity: 1;
+        }
+
+        .play-button {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0.8);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 10px 40px rgba(34, 197, 94, 0.4);
+        }
+
+        .video-card:hover .play-button {
+            transform: scale(1);
+        }
+
+        .play-button i {
+            color: white;
+            font-size: 28px;
+            margin-left: 4px;
+        }
+
+        .video-info {
+            padding: 20px;
+        }
+
+        .video-duration {
+            position: absolute;
+            bottom: 80px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Progress Bar Animation */
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s;
+        }
+
+        .video-card:hover .progress-bar {
+            transform: scaleX(1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #22c55e;
+            transition: width 0.3s;
+        }
+
+        /* Custom Video Controls in Lightbox */
+        .custom-video {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            object-fit: contain;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 30px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .lightbox-content:hover .video-controls {
+            opacity: 1;
+        }
+
+        .control-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .control-progress {
+            height: 100%;
+            background: #22c55e;
+            border-radius: 3px;
+            width: 0%;
+            position: relative;
+        }
+
+        .control-progress::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .control-bar:hover .control-progress::after {
+            opacity: 1;
+        }
+
+        /* Navigation Arrows */
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: white;
+            font-size: 24px;
+        }
+
+        .nav-arrow:hover {
+            background: #22c55e;
+            border-color: #22c55e;
+        }
+
+        .nav-prev { left: -80px; }
+        .nav-next { right: -80px; }
+
+        @media (max-width: 768px) {
+            .nav-prev { left: 10px; }
+            .nav-next { right: 10px; }
+            .lightbox-content {
+                width: 100vw;
+                height: 60vh;
+            }
+        }
+
+        /* Glass Effect */
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Loading Animation */
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(34, 197, 94, 0.3);
+            border-top-color: #22c55e;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Pulse Ring for Recording */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+
+        .recording-indicator::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 2px solid #ef4444;
+            border-radius: 50%;
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body class="bg-tech-900 text-white font-sans antialiased">
+
+    <!-- Video Lightbox Modal -->
+    <div class="video-lightbox" id="videoLightbox">
+        <div class="lightbox-content">
+            <!-- Close Button -->
+            <button class="close-lightbox" onclick="closeLightbox()">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+
+            <!-- Navigation Arrows -->
+            <button class="nav-arrow nav-prev" onclick="prevVideo()">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="nav-arrow nav-next" onclick="nextVideo()">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
+            <!-- Video Container -->
+            <div class="relative w-full h-full">
+                <video id="lightboxVideo" class="custom-video" controls>
+                    <source src="" type="video/mp4">
+                    Seu navegador não suporta vídeos HTML5.
+                </video>
+
+                <!-- Loading Spinner -->
+                <div id="videoLoader" class="absolute inset-0 flex items-center justify-center bg-black/50 hidden">
+                    <div class="loader"></div>
+                </div>
+
+                <!-- Custom Controls Overlay -->
+                <div class="video-controls">
+                    <div class="control-bar" onclick="seekVideo(event)">
+                        <div class="control-progress" id="controlProgress"></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <button onclick="togglePlay()" class="w-12 h-12 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition">
+                                <i class="fas fa-play text-white" id="playPauseIcon"></i>
+                            </button>
+                            <span class="font-mono text-sm" id="timeDisplay">0:00 / 0:00</span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="toggleFullscreen()" class="text-white/70 hover:text-white">
+                                <i class="fas fa-expand text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video Info in Lightbox -->
+            <div class="absolute -bottom-20 left-0 right-0 text-center">
+                <h3 class="text-2xl font-bold mb-2" id="lightboxTitle">Título do Vídeo</h3>
+                <p class="text-slate-400" id="lightboxDesc">Descrição do vídeo</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <nav class="fixed w-full z-50 glass border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-agro-500 to-agro-700 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-microchip text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg tracking-tight">CAMPIFI<span class="text-agro-500">TECH</span></h1>
+                        <p class="text-[10px] text-slate-400 font-mono">AI + ML + CONTROLE INDUSTRIAL</p>
+                    </div>
+                </div>
+                
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#intro" class="text-sm text-slate-300 hover:text-agro-400 transition-colors">Introdução</a>
+                    <a href="#tecnologias" class="text-sm text-slate-300 hover:text-agro-400 transition-colors">Tecnologias</a>
+                    <a href="#funcionamento" class="text-sm text-slate-300 hover:text-agro-400 transition-colors">Funcionamento</a>
+                    <a href="#videos" class="text-sm text-agro-400 font-semibold">Vídeos</a>
+                </div>
+
+                <button class="md:hidden text-slate-300" onclick="toggleMenu()">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 px-4 overflow-hidden">
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-agro-900/20 via-tech-900 to-tech-900"></div>
+        
+        <div class="max-w-7xl mx-auto relative text-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-agro-500/10 border border-agro-500/20 text-agro-400 text-sm font-medium mb-6">
+                <span class="w-2 h-2 bg-agro-500 rounded-full animate-pulse"></span>
+                Sistema de Controle Inteligente
+            </div>
+            
+            <h2 class="text-5xl md:text-6xl font-bold mb-6 leading-tight">
+                Controle de Motor com <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-agro-400 to-blue-500">
+                    Reconhecimento Facial
+                </span>
+            </h2>
+            
+            <p class="text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
+                Integração entre Inteligência Artificial, Machine Learning e automação industrial 
+                para controle seguro de motores, bombas e sistemas agrícolas.
+            </p>
+
+            <div class="mt-10 flex justify-center gap-4">
+                <a href="#videos" class="px-8 py-4 bg-agro-600 hover:bg-agro-500 text-white rounded-full font-semibold transition-all flex items-center gap-2 shadow-lg shadow-agro-500/25">
+                    <i class="fas fa-play"></i> Ver Demonstrações
+                </a>
+                <a href="#codigo" class="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-full font-semibold transition-all flex items-center gap-2">
+                    <i class="fas fa-code"></i> Código Fonte
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Videos Section -->
+    <section id="videos" class="py-20 px-4 bg-slate-900/50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold mb-4">🎥 Vídeos Demonstrativos</h2>
+                <p class="text-slate-400 max-w-2xl mx-auto">
+                    Clique em qualquer vídeo para assistir em tela cheia com qualidade máxima. 
+                    Use as setas do teclado para navegar entre os vídeos.
+                </p>
+            </div>
+
+            <!-- Video Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6" id="videoGrid">
+                <!-- Videos will be generated by JavaScript -->
+            </div>
+
+            <!-- Video Counter -->
+            <div class="mt-8 text-center">
+                <p class="text-slate-500 text-sm">
+                    Mostrando <span id="videoCount" class="text-agro-400 font-bold">4</span> vídeos demonstrativos
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Section -->
+    <section id="codigo" class="py-20 px-4">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 text-center">💻 Código Fonte</h2>
+            
+            <div class="glass rounded-2xl p-6 overflow-x-auto">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-700 pb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fab fa-python text-yellow-400 text-xl"></i>
+                        <span class="font-semibold">face_recognition_control.py</span>
+                    </div>
+                    <button onclick="copyCode()" class="text-slate-400 hover:text-white text-sm flex items-center gap-2">
+                        <i class="fas fa-copy"></i> Copiar
+                    </button>
+                </div>
+                <pre class="text-sm leading-relaxed overflow-x-auto font-mono text-slate-300"><code>import cv2
+import numpy as np
+from gpiozero import Motor
+import time
+
+# Configuração do motor
+motor = Motor(forward=17, backward=18)
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+
+def controlar_motor(face_detected):
+    if face_detected:
+        motor.forward()
+        print("Motor LIGADO - Rosto autorizado")
+    else:
+        motor.stop()
+        print("Motor PARADO")
+
+# Loop principal
+cap = cv2.VideoCapture(0)
+while True:
+    ret, frame = cap.read()
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    
+    controlar_motor(len(faces) > 0)
+    
+    for (x,y,w,h) in faces:
+        cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+    
+    cv2.imshow('CAMPIFITECH - Controle Facial', frame)
+    
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-800 py-12 px-4">
+        <div class="max-w-7xl mx-auto text-center">
+            <div class="flex justify-center items-center gap-3 mb-4">
+                <div class="w-8 h-8 bg-agro-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-microchip text-white text-sm"></i>
+                </div>
+                <span class="font-bold text-lg">CAMPIFITECH</span>
+            </div>
+            <p class="text-slate-500 text-sm mb-2">© 2026 Projeto Educacional de AI + Machine Learning</p>
+            <p class="text-slate-600 text-xs">Desenvolvido por GuiGesaifarm</p>
+        </div>
+    </footer>
+
+    <script>
+        // Video Data
+        const videos = [
+            {
+                id: 1,
+                title: "Reconhecimento Facial em Tempo Real",
+                description: "Demonstração do sistema de detecção facial utilizando OpenCV e Haar Cascades",
+                duration: "2:34",
+                thumbnail: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&h=338&fit=crop",
+                src: "videos/video1.mp4",
+                tags: ["Python", "OpenCV"]
+            },
+            {
+                id: 2,
+                title: "Controle do Motor de Passo",
+                description: "Integração com motor NEMA 23 e controle de velocidade via reconhecimento",
+                duration: "1:45",
+                thumbnail: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=338&fit=crop",
+                src: "videos/video2.mp4",
+                tags: ["Arduino", "Hardware"]
+            },
+            {
+                id: 3,
+                title: "Aplicação em Bomba Hidráulica",
+                description: "Sistema de irrigação automatizado com controle facial do operador",
+                duration: "3:12",
+                thumbnail: "https://images.unsplash.com/photo-1565514020176-db9e377cf3c8?w=600&h=338&fit=crop",
+                src: "videos/video3.mp4",
+                tags: ["IoT", "Hidráulica"]
+            },
+            {
+                id: 4,
+                title: "Integração Completa AgroTech",
+                description: "Dashboard web com monitoramento em tempo real e notificações",
+                duration: "4:20",
+                thumbnail: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=600&h=338&fit=crop",
+                src: "videos/video4.mp4",
+                tags: ["Full Stack", "Cloud"]
+            }
+        ];
+
+        let currentVideoIndex = 0;
+        const lightbox = document.getElementById('videoLightbox');
+        const lightboxVideo = document.getElementById('lightboxVideo');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const controlProgress = document.getElementById('controlProgress');
+        const timeDisplay = document.getElementById('timeDisplay');
+
+        // Generate Video Grid
+        function generateVideoGrid() {
+            const grid = document.getElementById('videoGrid');
+            grid.innerHTML = videos.map((video, index) => `
+                <div class="video-card group" onclick="openLightbox(${index})">
+                    <div class="video-thumbnail">
+                        <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
+                        <div class="play-overlay">
+                            <div class="play-button">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        </div>
+                        <span class="video-duration">${video.duration}</span>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="font-semibold text-lg leading-tight group-hover:text-agro-400 transition-colors">${video.title}</h3>
+                        </div>
+                        <p class="text-slate-400 text-sm mb-3 line-clamp-2">${video.description}</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${video.tags.map(tag => `<span class="px-2 py-1 bg-slate-700 text-slate-300 text-xs rounded">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Open Lightbox
+        function openLightbox(index) {
+            currentVideoIndex = index;
+            const video = videos[index];
+            
+            lightboxVideo.src = video.src;
+            document.getElementById('lightboxTitle').textContent = video.title;
+            document.getElementById('lightboxDesc').textContent = video.description;
+            
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Auto play
+            lightboxVideo.load();
+            setTimeout(() => {
+                lightboxVideo.play();
+                playPauseIcon.classList.remove('fa-play');
+                playPauseIcon.classList.add('fa-pause');
+            }, 300);
+        }
+
+        // Close Lightbox
+        function closeLightbox() {
+            lightboxVideo.pause();
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+            lightboxVideo.src = '';
+        }
+
+        // Navigation
+        function prevVideo() {
+            currentVideoIndex = (currentVideoIndex - 1 + videos.length) % videos.length;
+            openLightbox(currentVideoIndex);
+        }
+
+        function nextVideo() {
+            currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+            openLightbox(currentVideoIndex);
+        }
+
+        // Video Controls
+        function togglePlay() {
+            if (lightboxVideo.paused) {
+                lightboxVideo.play();
+                playPauseIcon.classList.remove('fa-play');
+                playPauseIcon.classList.add('fa-pause');
+            } else {
+                lightboxVideo.pause();
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+            }
+        }
+
+        function seekVideo(e) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            lightboxVideo.currentTime = pos * lightboxVideo.duration;
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                lightboxVideo.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Update Progress
+        lightboxVideo.addEventListener('timeupdate', () => {
+            const progress = (lightboxVideo.currentTime / lightboxVideo.duration) * 100;
+            controlProgress.style.width = progress + '%';
+            
+            const current = formatTime(lightboxVideo.currentTime);
+            const duration = formatTime(lightboxVideo.duration || 0);
+            timeDisplay.textContent = `${current} / ${duration}`;
+        });
+
+        lightboxVideo.addEventListener('ended', () => {
+            playPauseIcon.classList.remove('fa-pause');
+            playPauseIcon.classList.add('fa-play');
+        });
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (!lightbox.classList.contains('active')) return;
+            
+            switch(e.key) {
+                case 'Escape':
+                    closeLightbox();
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    togglePlay();
+                    break;
+                case 'ArrowLeft':
+                    prevVideo();
+                    break;
+                case 'ArrowRight':
+                    nextVideo();
+                    break;
+                case 'f':
+                    toggleFullscreen();
+                    break;
+            }
+        });
+
+        // Close on background click
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) closeLightbox();
+        });
+
+        // Copy Code
+        function copyCode() {
+            const code = document.querySelector('pre code').innerText;
+            navigator.clipboard.writeText(code);
+            
+            const btn = event.currentTarget;
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> Copiado!';
+            setTimeout(() => btn.innerHTML = original, 2000);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            generateVideoGrid();
+        });
+
+        // Mobile Menu
+        function toggleMenu() {
+            alert('Menu mobile - implementar drawer');
+        }
+    </script>
+</body>
+</html>
